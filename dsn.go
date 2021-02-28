@@ -21,7 +21,7 @@ func FromRequest(r *http.Request) (*DSN, error) {
 
 		We parse headers first to find User info. This will return pk, sk, both or err if no pk is found.
 		If we err using headers we proceed to the QS. An Err here throws for the entire parse request operation.
-		Returns the DSN struct which offers the original DSN with myDSN.originalDSN
+		Returns the DSN struct which offers the original DSN with myDSN.URL
 	*/
 	var user *User
 	u := r.URL //represents a fully parsed url
@@ -56,7 +56,7 @@ func FromRequest(r *http.Request) (*DSN, error) {
 }
 
 type DSN struct {
-	originalDSN string //original dsn for incoming request
+	URL string //original dsn for incoming request
 }
 type User struct {
 	PublicKey string //public key for DSN
@@ -76,7 +76,7 @@ func createDSN(d *User, host string, projectID string) *DSN {
 	} else if len(d.PublicKey) > 0 && len(d.SecretKey) > 0 {
 		myDSN = prefix + d.PublicKey + ":" + d.SecretKey + "@" + host + "/" + projectID
 	}
-	return &DSN{originalDSN: myDSN}
+	return &DSN{URL: myDSN}
 }
 func parseHeaders(h []string) (*User, error) {
 	/*
