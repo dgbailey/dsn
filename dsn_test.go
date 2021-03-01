@@ -27,12 +27,13 @@ var testTableLegacyUserInfo = []testRequest{
 			"sentry_client=<client version, arbitrary>",
 			"sentry_timestamp=1614144877.269",
 		},
+
 		map[string]string{
 			"name": "testbody",
 		}, "Testing user info in querystring",
 		"https://4784fbc50de2473f9977cfce8a9adce5:4784fbc50de2473f9977cfce8a9adce5@sentry.io/1234"},
 	//sentry_secret & sentry_key in X-SENTRY-AUTH header
-	{"https://sentry.io/api/1234/store/?&sentry_version=7",
+	{"https://o87286.ingest.sentry.io/api/1234/store/?&sentry_version=7",
 		[]string{"sentry_version=7",
 			"sentry_client=<client version, arbitrary>",
 			"sentry_timestamp=1614144877.269",
@@ -41,7 +42,7 @@ var testTableLegacyUserInfo = []testRequest{
 		map[string]string{
 			"name": "testbody",
 		}, "Testing user info in headers",
-		"https://4784fbc50de2473f9977cfce8a9adce5:4784fbc50de2473f9977cfce8a9adce5@sentry.io/1234"},
+		"https://4784fbc50de2473f9977cfce8a9adce5:4784fbc50de2473f9977cfce8a9adce5@o87286.ingest.sentry.io/1234"},
 }
 var testTableMissingUserInfo = []testRequest{
 	//ONLY sentry_secret in query string
@@ -98,14 +99,14 @@ func TestLegacyUserRequest(t *testing.T) {
 		rb, _ := json.Marshal(test.body)
 		r, _ := http.NewRequest("POST", test.url, bytes.NewBuffer(rb))
 		r.Header.Set("X-SENTRY-AUTH", strings.Join(test.header, ","))
-		got, err := dsn.FromRequest(r)
-		if err != nil {
-			//check that legacy DSN is correct
-			if got.URL != test.expected {
-				t.Errorf("Expected -- %s -- Got %s", test.expected, err)
-			}
+		got, _ := dsn.FromRequest(r)
 
+		//check that legacy DSN is correct
+
+		if got.URL != test.expected {
+			t.Errorf("Expected -- %s -- Got %s", test.expected, got.URL)
 		}
+
 	}
 }
 
