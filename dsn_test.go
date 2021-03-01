@@ -125,7 +125,7 @@ func TestMissingPublicKey(t *testing.T) {
 
 func TestMissingProjectID(t *testing.T) {
 	//test needed to validate errors for missing project IDs
-	//test includes check for legacy store endpoint api/store. This should return a dsn without projectID
+	//test includes check for legacy store endpoint api/store. This should return a dsn without projectID.
 	for _, test := range testTableProjectID {
 		rb, _ := json.Marshal(test.body)
 		r, _ := http.NewRequest("POST", test.url, bytes.NewBuffer(rb))
