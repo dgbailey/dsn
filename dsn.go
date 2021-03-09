@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"fmt"
 )
 
 var (
@@ -53,6 +54,11 @@ func ParseHeaders(h []string) (*User, error) {
 	*/
 	var sentryPublic string
 	var sentrySecret string
+	
+	if len(h) == 0 {
+		return nil, ErrMissingUser
+	}
+
 	toArray := strings.Split(h[0], ",")
 
 	for _, v := range toArray {
