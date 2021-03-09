@@ -6,8 +6,10 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-
+	
 )
+
+var HTTP_X_SENTRY_AUTH = "X-SENTRY-AUTH"
 
 var (
 	// ErrMissing User Thrown if we are missing the public key that comprises {PROTOCOL}://{PUBLIC_KEY}:{SECRET_KEY}@{HOST}{PATH}/{PROJECT_ID}
@@ -27,8 +29,6 @@ type User struct {
 	SecretKey string //private key for DSN if necessary
 }
 
-//perhaps we can assume then that it will never be both
-//we either are using q string or headers (mutually exclusive?)
 
 func CreateDSN(d *User, host string, projectID string) *DSN {
 	//Assumes either both keys are present or just public key. Other cases are caught earlier in processing incoming requests
@@ -63,16 +63,13 @@ func ParseHeaders(h []string) (*User, error) {
 
 	for _, v := range toArray {
 
-		//should errors be thrown here?
 		foundPublic, _ := regexp.MatchString(`sentry_key=([a-f0-9]{32})`, v)
 		foundPrivate, _ := regexp.MatchString(`sentry_secret=([a-f0-9]{32})`, v)
 		if foundPublic {
 			sentryPublic = strings.Split(v, "=")[1]
-
 		}
 		if foundPrivate {
 			sentrySecret = strings.Split(v, "=")[1]
-
 		}
 	}
 	if len(sentryPublic) == 0 {
@@ -102,11 +99,11 @@ func ParseQueryString(u *url.URL) (*User, error) {
 }
 
 func CheckPath(u *url.URL) (string, error) {
-	/* assumes /api/<project_id>/store/
-	\/api\/store\/
+	/* 
+	assumes /api/<project_id>/store/   OR    \/api\/store\/
 	the legacy /api/store/ endpoint does not include project id.
-	This is usually where public key could be used to lookup project in Relay. We are handling this currently by
-	returning an empty string for legacy store endpoints.
+	This is usually where public key could be used to lookup project in Relay. As we are not in relay this is not an option.
+	We are handling this currently byreturning an empty string for legacy store endpoints.
 
 	We are acting optimistically here in terms of uri normalization.
 
@@ -124,6 +121,7 @@ func CheckPath(u *url.URL) (string, error) {
 		return "", ErrMissingProjectID
 	}
 	pathItems := strings.Split(path, "/")
+
 	//with leading + trailing splits array has deterministic length of 5
 	return pathItems[2], nil
 
@@ -139,7 +137,7 @@ func FromRequest(r *http.Request) (*DSN, error) {
 	*/
 	var user *User
 	u := r.URL //represents a fully parsed url
-	h := r.Header.Values("X-Sentry-Auth")
+	h := r.Header.Values(HTTP_X_SENTRY_AUTH)
 
 	host := u.Hostname()
 	if len(host) == 0{

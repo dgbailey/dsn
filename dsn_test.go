@@ -79,7 +79,7 @@ var testTableProjectID = []testRequest{
 		}, "Testing legacy store path",
 		"https://4784fbc50de2473f9977cfce8a9adce5:4784fbc50de2473f9977cfce8a9adce5@sentry.io"},
 	//sentry_secret & sentry_key in X-SENTRY-AUTH header
-	{"https://sentry.io//api//1234//store//?&sentry_version=7",
+	{"https://sentry.io//api//1234///store//?&sentry_version=7",
 		[]string{"sentry_version=7",
 			"sentry_client=<client version, arbitrary>",
 			"sentry_timestamp=1614144877.269",
@@ -103,7 +103,6 @@ func TestLegacyUserRequest(t *testing.T) {
 		got, _ :=FromRequest(r)
 
 		//check that legacy DSN is correct
-
 		if got.URL != test.expected {
 			t.Errorf("Expected -- %s -- Got %s", test.expected, got.URL)
 		}
