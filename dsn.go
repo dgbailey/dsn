@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+
 )
 
 var (
@@ -89,7 +90,7 @@ func ParseQueryString(u *url.URL) (*User, error) {
 	   Throws if we are missing pk as this is critical.
 	   Returns user struct with appropriate values or empty strings.
 	*/
-
+	
 	pk := u.Query().Get("sentry_key")
 	if len(pk) == 0 {
 		return nil, ErrMissingUser
@@ -140,7 +141,11 @@ func FromRequest(r *http.Request) (*DSN, error) {
 	u := r.URL //represents a fully parsed url
 	h := r.Header.Values("X-Sentry-Auth")
 
-	host := u.Host
+	host := u.Hostname()
+	if len(host) == 0{
+		host = r.Host
+	}
+	//some routers/proxies strip the host from http.Request.URL so http.Request.Host is useful.
 
 	// parse headers first
 	usingHeader, err := ParseHeaders(h)

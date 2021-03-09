@@ -3,11 +3,10 @@ package dsn
 import (
 	"bytes"
 	"encoding/json"
-	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"../dsn"
 )
 
 //setup
@@ -92,14 +91,16 @@ var testTableProjectID = []testRequest{
 		"https://4784fbc50de2473f9977cfce8a9adce5:4784fbc50de2473f9977cfce8a9adce5@sentry.io/1234"},
 }
 
+
+
 //tests
 
 func TestLegacyUserRequest(t *testing.T) {
 	for _, test := range testTableLegacyUserInfo {
 		rb, _ := json.Marshal(test.body)
-		r, _ := http.NewRequest("POST", test.url, bytes.NewBuffer(rb))
+		r := httptest.NewRequest("POST", test.url, bytes.NewBuffer(rb))
 		r.Header.Set("X-SENTRY-AUTH", strings.Join(test.header, ","))
-		got, _ := dsn.FromRequest(r)
+		got, _ :=FromRequest(r)
 
 		//check that legacy DSN is correct
 
@@ -114,11 +115,11 @@ func TestMissingPublicKey(t *testing.T) {
 	//test needed to validate errors for missing public keys
 	for _, test := range testTableMissingUserInfo {
 		rb, _ := json.Marshal(test.body)
-		r, _ := http.NewRequest("POST", test.url, bytes.NewBuffer(rb))
+		r := httptest.NewRequest("POST", test.url, bytes.NewBuffer(rb))
 		r.Header.Set("X-SENTRY-AUTH", strings.Join(test.header, ","))
-		got, _ := dsn.FromRequest(r)
+		got, _ := FromRequest(r)
 		if got != nil {
-			t.Errorf("Expected -- %s -- Got %s", dsn.ErrMissingUser, got)
+			t.Errorf("Expected -- %s -- Got %s", ErrMissingUser, got)
 		}
 	}
 
@@ -129,16 +130,19 @@ func TestMissingProjectID(t *testing.T) {
 	//test includes check for legacy store endpoint api/store. This should return a dsn without projectID.
 	for _, test := range testTableProjectID {
 		rb, _ := json.Marshal(test.body)
-		r, _ := http.NewRequest("POST", test.url, bytes.NewBuffer(rb))
+		r := httptest.NewRequest("POST", test.url, bytes.NewBuffer(rb))
 		r.Header.Set("X-SENTRY-AUTH", strings.Join(test.header, ","))
-		got, err := dsn.FromRequest(r)
+		got, err := FromRequest(r)
 		if got != nil {
 			if got.URL != test.expected {
 				t.Errorf("Expected -- %s -- Got %s", test.expected, got.URL)
 			}
 
-		} else if err != dsn.ErrMissingProjectID {
-			t.Errorf("Expected -- %s -- Got %s", dsn.ErrMissingProjectID, err)
+		} else if err != ErrMissingProjectID {
+			t.Errorf("Expected -- %s -- Got %s", ErrMissingProjectID, err)
 		}
 	}
 }
+
+
+
