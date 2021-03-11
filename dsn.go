@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-	
 )
 
 var HTTP_X_SENTRY_AUTH = "X-SENTRY-AUTH"
@@ -31,19 +30,21 @@ type User struct {
 
 
 func CreateDSN(d *User, host string, projectID string) *DSN {
-	//Assumes either both keys are present or just public key. Other cases are caught earlier in processing incoming requests
+	/*
+	In the case where we encounter the legacy /api/store/ the returned DNS struct will have len(url) == 0
+	This will allow for optional checks in case the other parts of the struct (publicKey) are used for projectID lookups
+	Remaining conditions assume either both keys are present or just public key. 
+	*/
 	var url string
 	prefix := "https://"
-	if len(d.PublicKey) > 0 && len(d.SecretKey) == 0 {
+	if len(projectID) == 0{
+		url = ""
+	}else if len(d.PublicKey) > 0 && len(d.SecretKey) == 0 {
 		url = prefix + d.PublicKey + "@" + host + "/" + projectID
-
-	} else if len(d.PublicKey) > 0 && len(d.SecretKey) > 0 {
+	}else if len(d.PublicKey) > 0 && len(d.SecretKey) > 0 {
 		url = prefix + d.PublicKey + ":" + d.SecretKey + "@" + host + "/" + projectID
 	}
-	//check trailing if no project ID
-	if len(projectID) == 0 {
-		url = strings.TrimSuffix(url, "/")
-	}
+	
 	return &DSN{URL: url, ProjectID: projectID, Host: host, PublicKey: d.PublicKey, SecretKey: d.SecretKey}
 }
 func ParseHeaders(h []string) (*User, error) {
@@ -58,8 +59,9 @@ func ParseHeaders(h []string) (*User, error) {
 	if len(h) == 0 {
 		return nil, ErrMissingUser
 	}
-
-	toArray := strings.Split(h[0], ",")
+	
+	toArray := strings.Split(strings.Split(h[0]," ")[1],",")
+	//Anticipates header: Sentry <start-header-values,...>
 
 	for _, v := range toArray {
 
@@ -100,14 +102,20 @@ func ParseQueryString(u *url.URL) (*User, error) {
 
 func CheckPath(u *url.URL) (string, error) {
 	/* 
-	assumes /api/<project_id>/store/   OR    \/api\/store\/
-	the legacy /api/store/ endpoint does not include project id.
+	Assumes /api/<project_id>/store/   OR    \/api\/store\/
+	The legacy /api/store/ endpoint does not include project id.
+
 	This is usually where public key could be used to lookup project in Relay. As we are not in relay this is not an option.
-	We are handling this currently byreturning an empty string for legacy store endpoints.
+	Older clients tested:
+		raven-python 5.27.0
+		java Raven-Java 7.8.0-31c26
+		javascript raven-js 3.10.0
+	
+	All of these clients utilize the  /api/<project_id>/store/  endpoint.
+	Given the test have a higher degree of certainty that we will not encounter the legacy api.
+	We currently throw below if we do.
 
-	We are acting optimistically here in terms of uri normalization.
-
-	** We need to ensure leading and trailing slashes **
+	** Anticipates leading and trailing slashes **
 	https://develop.sentry.dev/sdk/store
 	*/
 	path := u.Path
@@ -143,12 +151,12 @@ func FromRequest(r *http.Request) (*DSN, error) {
 	if len(host) == 0{
 		host = r.Host
 	}
-	//some routers/proxies strip the host from http.Request.URL so http.Request.Host is useful.
+	//some routers/proxies may strip the host from http.Request.URL so http.Request.Host is useful.
 
-	// parse headers first
+	
 	usingHeader, err := ParseHeaders(h)
 	if err != nil {
-		//try to gather DSN info from query string
+	
 		usingQs, qerr := ParseQueryString(u)
 
 		if qerr != nil {
