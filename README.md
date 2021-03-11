@@ -1,13 +1,13 @@
 # dsn
 
-Written to derive DSN keys from originating -forwarded- requests for an on prem Sentry (8.13) store endpoint /api/{projectID}/store/.
+Written to derive DSN keys from[https://golang.org/pkg/net/http/#Request](requests) forwarded from an on prem Sentry (8.13) store endpoint /api/{projectID}/store/.
 
 # implementation
 ```
 import "github.com/dgbailey/dsn"
 
-func main(){
-
+func myFunc(r *http.Request){
+    //some request handler
 	dsn, err := dsn.FromRequest(r)
 	if err != nil {
 		//handle err
